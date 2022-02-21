@@ -1109,6 +1109,10 @@ static struct riscv_implicit_subset riscv_implicit_subsets[] =
   {"q", "d",		check_implicit_always},
   {"d", "f",		check_implicit_always},
   {"f", "zicsr",	check_implicit_always},
+  {"zcb", "zca",        check_implicit_always},
+  {"zcmb", "zcb",       check_implicit_always},
+  {"zcmp", "zca",       check_implicit_always},
+  {"zcmpe", "zca",      check_implicit_always},
   {NULL, NULL, NULL}
 };
 
@@ -1122,7 +1126,8 @@ static struct riscv_implicit_subset riscv_implicit_subsets[] =
 
 static const char * const riscv_std_z_ext_strtab[] =
 {
-  "zba", "zbb", "zbc", "zicsr", "zifencei", "zihintpause", NULL
+  "zba", "zbb", "zbc", "zca", "zcb", "zcf", "zcmb", "zcmp", "zcmpe", "zcmt",
+  "zicsr", "zifencei", "zihintpause", NULL
 };
 
 static const char * const riscv_std_s_ext_strtab[] =

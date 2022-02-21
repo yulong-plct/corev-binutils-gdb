@@ -150,6 +150,14 @@ static const struct riscv_ext_version ext_version_table[] =
   {"zba",   ISA_SPEC_CLASS_DRAFT, 0, 93},
   {"zbc",   ISA_SPEC_CLASS_DRAFT, 0, 93},
 
+  {"zca",    ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcb",    ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcf",    ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcmb",   ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcmp",   ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcmpe",  ISA_SPEC_CLASS_DRAFT, 0, 7},
+  {"zcmt",   ISA_SPEC_CLASS_DRAFT, 0, 7},
+
   /* Terminate the list.  */
   {NULL, 0, 0, 0}
 };
