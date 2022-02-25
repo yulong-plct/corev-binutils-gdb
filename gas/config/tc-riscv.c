@@ -316,7 +316,10 @@ riscv_subset_supports (const char *feature)
 {
   struct riscv_subset_t *subset;
 
-  if (riscv_opts.rvc && (strcasecmp (feature, "c") == 0))
+  if (riscv_opts.rvc 
+	&& ((strcasecmp (feature, "c")
+		|| strcasecmp (feature, "zca")
+		|| strcasecmp (feature, "zcf")) == 0))
     return true;
 
   return riscv_lookup_subset (&riscv_subsets, feature, &subset);
@@ -328,7 +331,8 @@ riscv_multi_subset_supports (enum riscv_insn_class insn_class)
   switch (insn_class)
     {
     case INSN_CLASS_I: return riscv_subset_supports ("i");
-    case INSN_CLASS_C: return riscv_subset_supports ("c");
+    case INSN_CLASS_C: return riscv_subset_supports ("c")
+		       		|| riscv_subset_supports ("zca");
     case INSN_CLASS_A: return riscv_subset_supports ("a");
     case INSN_CLASS_M: return riscv_subset_supports ("m");
     case INSN_CLASS_F: return riscv_subset_supports ("f");
@@ -337,7 +341,8 @@ riscv_multi_subset_supports (enum riscv_insn_class insn_class)
 
     case INSN_CLASS_F_AND_C:
       return (riscv_subset_supports ("f")
-	      && riscv_subset_supports ("c"));
+	      && (riscv_subset_supports ("c")
+		  || riscv_subset_supports ("zcf")));
     case INSN_CLASS_D_AND_C:
       return (riscv_subset_supports ("d")
 	      && riscv_subset_supports ("c"));
@@ -3141,7 +3146,9 @@ riscv_after_parse_args (void)
 
   /* Add the RVC extension, regardless of -march, to support .option rvc.  */
   riscv_set_rvc (false);
-  if (riscv_subset_supports ("c"))
+  if (riscv_subset_supports ("c")
+	|| riscv_subset_supports ("zca")
+	|| riscv_subset_supports ("zcf"))
     riscv_set_rvc (true);
 
   /* Enable RVE if specified by the -march option.  */
