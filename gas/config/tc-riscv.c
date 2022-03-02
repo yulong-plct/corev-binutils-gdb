@@ -388,6 +388,19 @@ riscv_multi_subset_supports (enum riscv_insn_class insn_class)
     case INSN_CLASS_COREV_BI:
       return riscv_subset_supports ("xcorevbi") || riscv_subset_supports ("xcorev");
 
+    case INSN_CLASS_ZCB:
+      return riscv_subset_supports ("zcb");
+
+    case INSN_CLASS_ZCB_AND_ZBB:
+      return riscv_subset_supports ("zcb") && riscv_subset_supports ("zbb");
+
+    case INSN_CLASS_ZCB_AND_ZBA:
+      return riscv_subset_supports ("zcb") && riscv_subset_supports ("zba");
+
+    case INSN_CLASS_ZCB_AND_M:
+      /* m or zmmul(currently not suppoted yet) */
+      return riscv_subset_supports ("zcb") && riscv_subset_supports ("m");
+
     default:
       as_fatal ("internal: unreachable");
       return false;
@@ -1117,6 +1130,20 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
 		  return false;
 	      }
 	    break;
+	  case 'Z': /* ZC specific operators.  */
+	    switch (c = *p++)
+	      {
+		/* byte immediate operators, load/store byte insns.  */
+		case 'h': used_bits |= ENCODE_ZCB_HALFWORD_UIMM (-1U); break;
+		/* halfword immediate operators, load/store halfword insns.  */
+		case 'b': used_bits |= ENCODE_ZCB_BYTE_UIMM (-1U); break;
+		default:
+		  as_bad (_("internal: bad RISC-V opcode "
+			    "(unknown operand type `CZ%c'): %s %s"),
+			  c, opc->name, opc->args);
+		  return FALSE;
+	      }
+	    break;
 	  default:
 	    as_bad (_("internal: bad RISC-V opcode "
 		      "(unknown operand type `C%c'): %s %s"),
@@ -1217,6 +1244,17 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
 			"(unknown operand type `F%c'): %s %s"),
 		      c, opc->name, opc->args);
 	     return false;
+	  }
+	break;
+      case 'n': /* ZC */
+	switch (c = *p++)
+	  {
+	    case 'f': break;
+	    default:
+	      as_bad (_("internal: bad RISC-V opcode "
+			"(unknown operand type `n%c'): %s %s"),
+		      c, opc->name, opc->args);
+	    return FALSE;
 	  }
 	break;
       default:
@@ -2430,6 +2468,43 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 		    }
 		  break;
 
+		case 'Z': /* ZC extension.  */
+		  switch (*++args)
+		    {
+		    case 'h': /* immediate field for c.lh/c.lhu/c.sh.  */
+
+		      /* handle cases, such as c.sh rs2', (rs1') */
+		      if (riscv_handle_implicit_zero_offset (imm_expr, s))
+			continue;
+
+		      if (my_getSmallExpression (imm_expr, imm_reloc, s, p)
+			|| imm_expr->X_op != O_constant
+			|| !VALID_ZCB_HALFWORD_UIMM ((valueT) imm_expr->X_add_number))
+			  break;
+
+		      ip->insn_opcode |= ENCODE_ZCB_HALFWORD_UIMM (imm_expr->X_add_number);
+		      goto rvc_imm_done;
+
+		    case 'b': /* immediate field for c.lbu/c.sb.  */
+
+		      /* handle cases, such as c.lbu rd', (rs1') */
+		      if (riscv_handle_implicit_zero_offset (imm_expr, s))
+			continue;
+
+		      if (my_getSmallExpression (imm_expr, imm_reloc, s, p)
+			|| imm_expr->X_op != O_constant
+			|| !VALID_ZCB_BYTE_UIMM ((valueT) imm_expr->X_add_number))
+			break;
+
+		      ip->insn_opcode |= ENCODE_ZCB_BYTE_UIMM (imm_expr->X_add_number);
+		      goto rvc_imm_done;
+
+		    default:
+		      as_bad (_("internal: unknown ZC field specifier "
+			"field specifier `CZ%c'"), *args);
+		    }
+		  break;
+
 		default:
 		  as_bad (_("internal: unknown compressed field "
 			    "specifier `C%c'"), *args);
@@ -2931,6 +3006,26 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 	      s = expr_end;
 	      imm_expr->X_op = O_absent;
 	      continue;
+
+	    case 'n':
+	      switch (*++args)
+	        {
+		case 'f': /* operand for matching immediate 255.  */
+		  if (my_getSmallExpression (imm_expr, imm_reloc, s, p)
+		      || imm_expr->X_op != O_constant
+		      || imm_expr->X_add_number != 255)
+		    break;
+		  /* this operand is used for matching immediate 255, and
+		  we do not write anything to encoding by this operand. */
+		  s = expr_end;
+		  imm_expr->X_op = O_absent;
+		  continue;
+		default:
+		  as_bad (_("internal: unknown ZC 32 bits instruction "
+		        "field specifier `n%c'"), *args);
+		  break;
+		}
+	      break;
 
 	    default:
 	      as_fatal (_("internal: unknown argument type `%c'"), *args);
