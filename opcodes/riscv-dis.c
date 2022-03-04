@@ -274,6 +274,12 @@ print_insn_args (const char *d, insn_t l, bfd_vma pc, disassemble_info *info)
 		case 'h':
 		  print (info->stream, "%d", (int)EXTRACT_ZCB_HALFWORD_UIMM (l));
 		  break;
+		case 'B':
+		  print (info->stream, "%d", (int)EXTRACT_ZCMB_BYTE_UIMM (l));
+		  break;
+		case 'H':
+		  print (info->stream, "%d", (int)EXTRACT_ZCMB_HALFWORD_UIMM (l));
+		  break;
 		default: break;
 		}
 	      break;
