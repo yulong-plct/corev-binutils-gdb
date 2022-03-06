@@ -316,13 +316,22 @@ riscv_subset_supports (const char *feature)
 {
   struct riscv_subset_t *subset;
 
-  if (riscv_opts.rvc 
-	&& ((strcasecmp (feature, "c")
-		|| strcasecmp (feature, "zca")
-		|| strcasecmp (feature, "zcf")) == 0))
+  if (riscv_opts.rvc
+	&& ((strcasecmp (feature, "c") == 0
+	  || strcasecmp (feature, "zca") == 0
+	  || strcasecmp (feature, "zcf") == 0)))
     return true;
 
   return riscv_lookup_subset (&riscv_subsets, feature, &subset);
+}
+
+/* Return true if `c' or `zca' extension is used.  */
+static bool
+riscv_use_compressed_insn (void)
+{
+  /* riscv_opts.rvc is used to handler .option rvc case.  */
+  return riscv_opts.rvc ||
+    riscv_subset_supports ("zca");
 }
 
 static bool
@@ -332,7 +341,7 @@ riscv_multi_subset_supports (enum riscv_insn_class insn_class)
     {
     case INSN_CLASS_I: return riscv_subset_supports ("i");
     case INSN_CLASS_C: return riscv_subset_supports ("c")
-		       		|| riscv_subset_supports ("zca");
+			  || riscv_subset_supports ("zca");
     case INSN_CLASS_A: return riscv_subset_supports ("a");
     case INSN_CLASS_M: return riscv_subset_supports ("m");
     case INSN_CLASS_F: return riscv_subset_supports ("f");
@@ -1306,7 +1315,7 @@ md_begin (void)
   init_opcode_names_hash ();
 
   /* Set the default alignment for the text section.  */
-  record_alignment (text_section, riscv_opts.rvc ? 1 : 2);
+  record_alignment (text_section, riscv_use_compressed_insn () ? 1 : 2);
 }
 
 static insn_t
@@ -2105,7 +2114,7 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 		  if (riscv_insn_length ((insn->match == 0 && insn->mask == 0)
 					 ? ip->insn_opcode
 					 : insn->match) == 2
-		      && !riscv_opts.rvc)
+		      && !riscv_use_compressed_insn ())
 		    break;
 
 		  if (riscv_is_priv_insn (ip->insn_opcode))
@@ -3146,10 +3155,12 @@ riscv_after_parse_args (void)
 
   /* Add the RVC extension, regardless of -march, to support .option rvc.  */
   riscv_set_rvc (false);
-  if (riscv_subset_supports ("c")
-	|| riscv_subset_supports ("zca")
-	|| riscv_subset_supports ("zcf"))
+  if (riscv_subset_supports ("c"))
     riscv_set_rvc (true);
+  /* If we don't use full c extension, we need to set
+    c abi to true but unchange the riscv_opts.rvc.  */
+  else if (riscv_subset_supports ("zca"))
+    elf_flags |= EF_RISCV_RVC;
 
   /* Enable RVE if specified by the -march option.  */
   riscv_set_rve (false);
@@ -3634,7 +3645,7 @@ bool
 riscv_frag_align_code (int n)
 {
   bfd_vma bytes = (bfd_vma) 1 << n;
-  bfd_vma insn_alignment = riscv_opts.rvc ? 2 : 4;
+  bfd_vma insn_alignment = riscv_use_compressed_insn () ? 2 : 4;
   bfd_vma worst_case_bytes = bytes - insn_alignment;
   char *nops;
   expressionS ex;
