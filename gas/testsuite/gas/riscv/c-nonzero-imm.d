@@ -1,3 +1,3 @@
-#as: -march=rv64ic
+#as:
 #objdump: -dr
 #error_output: c-nonzero-imm.l

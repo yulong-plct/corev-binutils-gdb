@@ -1,4 +1,4 @@
-#as: -march=rv32ic
+#as: -march=rv32i
 #source: ext.s
 #objdump: -d
 
