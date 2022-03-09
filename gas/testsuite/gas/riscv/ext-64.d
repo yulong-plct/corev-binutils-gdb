@@ -1,4 +1,4 @@
-#as: -march=rv64ic -defsym __64_bit__=1
+#as: -march=rv64i -defsym __64_bit__=1
 #source: ext.s
 #objdump: -d
 
