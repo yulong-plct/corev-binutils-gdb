@@ -330,8 +330,9 @@ static bool
 riscv_use_compressed_insn (void)
 {
   /* riscv_opts.rvc is used to handler .option rvc case.  */
-  return riscv_opts.rvc ||
-    riscv_subset_supports ("zca");
+  return riscv_opts.rvc 
+	 || riscv_subset_supports ("zca")
+	 || riscv_subset_supports ("zcf");
 }
 
 static bool
@@ -3159,7 +3160,7 @@ riscv_after_parse_args (void)
     riscv_set_rvc (true);
   /* If we don't use full c extension, we need to set
     c abi to true but unchange the riscv_opts.rvc.  */
-  else if (riscv_subset_supports ("zca"))
+  else if (riscv_subset_supports ("zca") || riscv_subset_supports ("zcf"))
     elf_flags |= EF_RISCV_RVC;
 
   /* Enable RVE if specified by the -march option.  */
