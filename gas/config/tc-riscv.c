@@ -533,6 +533,15 @@ riscv_set_abi_by_arch (void)
 		"isn't supported");
     }
 
+  /* zcmb, zcmp and zcmpe extensions are not compatible with
+    16-bit double precision floating point instructions in C
+    extension.  */
+  if ((riscv_subset_supports ("zcmb")
+	  || riscv_subset_supports ("zcmp")
+	  || riscv_subset_supports ("zcmpe"))
+      && riscv_subset_supports ("c"))
+    as_bad ("arch Zcm* is not incompatible the C extension.");
+
   /* Update the EF_RISCV_FLOAT_ABI field of elf_flags.  */
   elf_flags &= ~EF_RISCV_FLOAT_ABI;
   elf_flags |= float_abi << 1;

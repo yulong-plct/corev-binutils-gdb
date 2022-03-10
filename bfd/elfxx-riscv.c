@@ -1892,34 +1892,6 @@ riscv_parse_subset (riscv_parse_subset_t *rps,
       no_conflict = false;
     }
 
-  /* zcmb, zcmp and zcmpe extensions are not compatible with
-  16-bit double precision floating point instructions in C
-  extension.  */
-  if (riscv_lookup_subset (rps->subset_list, "c", &subset)
-      && riscv_lookup_subset (rps->subset_list, "zcmb", &subset))
-    {
-      rps->error_handler
-	(_("-march=%s: zcmb is not incompatible the `c' extension"),
-	 arch);
-      no_conflict = false;
-    }
-  if (riscv_lookup_subset (rps->subset_list, "c", &subset)
-      && riscv_lookup_subset (rps->subset_list, "zcmp", &subset))
-    {
-      rps->error_handler
-	(_("-march=%s: zcmp is not incompatible the `c' extension"),
-	 arch);
-      no_conflict = false;
-    }
-  if (riscv_lookup_subset (rps->subset_list, "c", &subset)
-      && riscv_lookup_subset (rps->subset_list, "zcmpe", &subset))
-    {
-      rps->error_handler
-	(_("-march=%s: zcmpe is not incompatible the `c' extension"),
-	 arch);
-      no_conflict = false;
-    }
-
   return no_conflict;
 }
 
