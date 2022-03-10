@@ -53,6 +53,7 @@ static const char * const *riscv_fpr_names;
 
 /* If set, disassemble as most general instruction.  */
 static int no_aliases;
+static int skip_c_dpfp;
 
 static void
 set_default_riscv_dis_options (void)
@@ -60,6 +61,7 @@ set_default_riscv_dis_options (void)
   riscv_gpr_names = riscv_gpr_names_abi;
   riscv_fpr_names = riscv_fpr_names_abi;
   no_aliases = 0;
+  skip_c_dpfp = 0;
 }
 
 static bool
@@ -67,6 +69,8 @@ parse_riscv_dis_option_without_args (const char *option)
 {
   if (strcmp (option, "no-aliases") == 0)
     no_aliases = 1;
+  else if (strcmp (option, "skip-c-dpfp") == 0)
+    skip_c_dpfp = 1;
   else if (strcmp (option, "numeric") == 0)
     {
       riscv_gpr_names = riscv_gpr_names_numeric;
@@ -273,6 +277,12 @@ print_insn_args (const char *d, insn_t l, bfd_vma pc, disassemble_info *info)
 		  break;
 		case 'h':
 		  print (info->stream, "%d", (int)EXTRACT_ZCB_HALFWORD_UIMM (l));
+		  break;
+		case 'B':
+		  print (info->stream, "%d", (int)EXTRACT_ZCMB_BYTE_UIMM (l));
+		  break;
+		case 'H':
+		  print (info->stream, "%d", (int)EXTRACT_ZCMB_HALFWORD_UIMM (l));
 		  break;
 		default: break;
 		}
@@ -571,6 +581,10 @@ riscv_disassemble_insn (bfd_vma memaddr, insn_t word, disassemble_info *info)
 	  /* Is this instruction restricted to a certain value of XLEN?  */
 	  if ((op->xlen_requirement != 0) && (op->xlen_requirement != xlen))
 	    continue;
+	  /* Is this instruction is a 16-bit double precision floating point
+	     instruction, and may we skip it? */
+	  if (skip_c_dpfp && (op->insn_class == INSN_CLASS_D_AND_C))
+	    continue;
 
 	  /* It's a match.  */
 	  (*info->fprintf_func) (info->stream, "%s", op->name);
@@ -712,6 +726,9 @@ with the -M switch (multiple options should be separated by commas):\n"));
   fprintf (stream, _("\n\
   no-aliases      Disassemble only into canonical instructions, rather\n\
                   than into pseudoinstructions.\n"));
+
+  fprintf (stream, _("\n\
+  skip-c-dpfp     Skip 16-bit double precision floating point instructions.\n"));
 
   fprintf (stream, _("\n\
   priv-spec=PRIV  Print the CSR according to the chosen privilege spec\n\

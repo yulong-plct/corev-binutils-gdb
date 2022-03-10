@@ -401,6 +401,9 @@ riscv_multi_subset_supports (enum riscv_insn_class insn_class)
       /* m or zmmul(currently not suppoted yet) */
       return riscv_subset_supports ("zcb") && riscv_subset_supports ("m");
 
+    case INSN_CLASS_ZCMB:
+      return riscv_subset_supports ("zcmb");
+
     default:
       as_fatal ("internal: unreachable");
       return false;
@@ -529,6 +532,15 @@ riscv_set_abi_by_arch (void)
 	as_bad ("ilp32q/lp64q ABI can't be used when q extension "
 		"isn't supported");
     }
+
+  /* zcmb, zcmp and zcmpe extensions are not compatible with
+    16-bit double precision floating point instructions in C
+    extension.  */
+  if ((riscv_subset_supports ("zcmb")
+	  || riscv_subset_supports ("zcmp")
+	  || riscv_subset_supports ("zcmpe"))
+      && riscv_subset_supports ("c"))
+    as_bad ("arch Zcm* is not incompatible the C extension.");
 
   /* Update the EF_RISCV_FLOAT_ABI field of elf_flags.  */
   elf_flags &= ~EF_RISCV_FLOAT_ABI;
@@ -1137,6 +1149,10 @@ validate_riscv_insn (const struct riscv_opcode *opc, int length)
 		case 'h': used_bits |= ENCODE_ZCB_HALFWORD_UIMM (-1U); break;
 		/* halfword immediate operators, load/store halfword insns.  */
 		case 'b': used_bits |= ENCODE_ZCB_BYTE_UIMM (-1U); break;
+		/* byte immediate operators, load/store byte insns.  */
+		case 'H': used_bits |= ENCODE_ZCMB_HALFWORD_UIMM (-1U); break;
+		/* halfword immediate operators, load/store halfword insns.  */
+		case 'B': used_bits |= ENCODE_ZCMB_BYTE_UIMM (-1U); break;
 		default:
 		  as_bad (_("internal: bad RISC-V opcode "
 			    "(unknown operand type `CZ%c'): %s %s"),
@@ -2497,6 +2513,34 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
 			break;
 
 		      ip->insn_opcode |= ENCODE_ZCB_BYTE_UIMM (imm_expr->X_add_number);
+		      goto rvc_imm_done;
+
+		    case 'H': /* immediate field for cm.lh/cm.lhu/cm.sh.  */
+
+		      /* handle cases, such as cm.sh rs2', (rs1') */
+		      if (riscv_handle_implicit_zero_offset (imm_expr, s))
+			continue;
+
+		      if (my_getSmallExpression (imm_expr, imm_reloc, s, p)
+			|| imm_expr->X_op != O_constant
+			|| !VALID_ZCMB_HALFWORD_UIMM ((valueT) imm_expr->X_add_number))
+			  break;
+
+		      ip->insn_opcode |= ENCODE_ZCMB_HALFWORD_UIMM (imm_expr->X_add_number);
+		      goto rvc_imm_done;
+
+		    case 'B': /* immediate field for cm.lbu/cm.sb.  */
+
+		      /* handle cases, such as cm.lbu rd', (rs1') */
+		      if (riscv_handle_implicit_zero_offset (imm_expr, s))
+			continue;
+
+		      if (my_getSmallExpression (imm_expr, imm_reloc, s, p)
+			|| imm_expr->X_op != O_constant
+			|| !VALID_ZCMB_BYTE_UIMM ((valueT) imm_expr->X_add_number))
+			break;
+
+		      ip->insn_opcode |= ENCODE_ZCMB_BYTE_UIMM (imm_expr->X_add_number);
 		      goto rvc_imm_done;
 
 		    default:
