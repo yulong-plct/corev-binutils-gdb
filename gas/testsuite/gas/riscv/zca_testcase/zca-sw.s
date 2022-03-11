@@ -1,0 +1,10 @@
+target:
+    sw x8, (x9)
+    sw x9, 32(x10)
+    sw x10, 124(x11)
+    sw x11, 64(x12)
+    sw x12, 68(x13)
+    sw x13, 4(x14)
+    sw x14, 8(x15)
+    sw x15, 16(x8)
+    c.sw a0, (sp)
